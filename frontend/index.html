@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bore Dashboard</title>
+</head>
+<body>
+  <h1>Live Sensor Data</h1>
+  <pre id="data"></pre>
+
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  <script>
+    const socket = io("http://localhost:5000");
+
+    socket.on("sensor", (data) => {
+      document.getElementById("data").innerText =
+        JSON.stringify(data, null, 2);
+    });
+  </script>
+</body>
+</html>
