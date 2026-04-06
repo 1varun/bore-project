@@ -1,9 +1,18 @@
 version: '3.8'
 
+networks:
+  net-infra:
+    driver: bridge
+  net-public:
+    driver: bridge
+
 services:
+  # ==========================================
+  # 1. INFRASTRUCTURE 
+  # ==========================================
   timescaledb:
     image: timescale/timescaledb:latest-pg16
-    container_name: timescaledb
+    container_name: bore-infra-timescaledb
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -12,102 +21,139 @@ services:
       - "5432:5432"
     volumes:
       - timescaledb_data:/home/postgres/pgdata/data
+    networks:
+      - net-infra
     restart: unless-stopped
 
   mqtt:
     image: eclipse-mosquitto:latest
-    container_name: mqtt
+    container_name: bore-infra-mqtt
     ports:
       - "1883:1883"
       - "9001:9001"
     volumes:
-      - ./mosquitto/config:/mosquitto/config
-      - ./mosquitto/data:/mosquitto/data
-      - ./mosquitto/log:/mosquitto/log
+      - ./backend/infra/mosquitto/config:/mosquitto/config
+      - ./backend/infra/mosquitto/data:/mosquitto/data
+      - ./backend/infra/mosquitto/log:/mosquitto/log
+    networks:
+      - net-infra
     restart: unless-stopped
 
-  ingestion:
-    build: ./data_ingestion-service
-    container_name: data_ingestion
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: bore-infra-pgadmin
     environment:
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - MQTT_TOPIC=rig/live/data
-      - PLC_IP_ADDRESS=192.168.0.1
-      - PLC_RACK=0
-      - PLC_SLOT=1
-      - POLL_INTERVAL_MS=1000
-      - SIMULATE_PLC=true
+      - PGADMIN_DEFAULT_EMAIL=ivarun22@gmail.com
+      - PGADMIN_DEFAULT_PASSWORD=boreproject
+    ports:
+      - "5050:80"
+    networks:
+      - net-infra
+    restart: unless-stopped
     depends_on:
-      - mqtt
-    restart: unless-stopped
+      - timescaledb
 
-  db_writer:
-    build: ./db_writer-service
-    container_name: db_writer
+  # ==========================================
+  # 2. BACKEND SERVICES 
+  # ==========================================
+  ingestion:
+    build: ./backend/services/ingestion
+    container_name: bore-srv-ingestion
     environment:
+      - OPC_URL=opc.tcp://192.168.1.212:4096
       - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - MQTT_TOPIC=rig/live/data
       - PG_HOST=timescaledb
       - PG_PORT=5432
       - PG_USER=postgres
       - PG_PASSWORD=postgres
       - PG_DATABASE=boredb
+    volumes:
+      - ./backend/services/ingestion/ignitiontags.xlsx:/app/ignitiontags.xlsx
+      - ./backend/services/ingestion/src/main.py:/app/src/main.py
+    networks:
+      - net-infra
     depends_on:
       - mqtt
       - timescaledb
     restart: unless-stopped
 
-  backend:
-    build: ./backend
-    container_name: boreproject_backend
-    ports:
-      - "3000:3000"
+  db_writer:
+    build: ./backend/services/writer
+    container_name: bore-srv-dbwriter
     environment:
       - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - MQTT_TOPIC=rig/live/data
       - PG_HOST=timescaledb
       - PG_PORT=5432
       - PG_USER=postgres
       - PG_PASSWORD=postgres
       - PG_DATABASE=boredb
+    networks:
+      - net-infra
+    depends_on:
+      - mqtt
+      - timescaledb
+    restart: unless-stopped
+
+  modbus:
+    build: ./backend/services/modbus
+    container_name: bore-srv-modbus
+    ports:
+      - "5020:5020"
+    environment:
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - MODBUS_PORT=5020
+    networks:
+      - net-infra
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+  witsml:
+    build: ./backend/services/witsml
+    container_name: bore-srv-witsml
+    ports:
+      - "8080:8080"
+    environment:
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - PORT=8080
+    networks:
+      - net-infra
+    depends_on:
+      - mqtt
+    restart: unless-stopped
+
+  # ==========================================
+  # 3. WEB APPLICATIONS (API / FRONTEND)
+  # ==========================================
+  api_server:
+    build: ./backend/services/api
+    container_name: bore-app-api
+    ports:
+      - "3000:3000"
+    environment:
+      - MQTT_BROKER_URL=mqtt://mqtt:1883
+      - PG_HOST=timescaledb
+      - PG_PORT=5432
+      - PG_USER=postgres
+      - PG_PASSWORD=postgres
+      - PG_DATABASE=boredb
+    networks:
+      - net-infra
+      - net-public
     depends_on:
       - mqtt
       - timescaledb
     restart: unless-stopped
 
   frontend:
-    build: ./frontend
-    container_name: boreproject_frontend
+    build: ./apps/frontend
+    container_name: bore-app-frontend
     ports:
       - "5173:5173"
+    networks:
+      - net-public
     depends_on:
-      - backend
-
-  modbus:
-    build: ./modbus-service
-    container_name: modbus_transmission
-    ports:
-      - "5020:5020"
-    environment:
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - MQTT_TOPIC=rig/live/data
-      - MODBUS_PORT=5020
-    depends_on:
-      - mqtt
-    restart: unless-stopped
-
-  witsml:
-    build: ./witsml-service
-    container_name: witsml_transmission
-    ports:
-      - "8080:8080"
-    environment:
-      - MQTT_BROKER_URL=mqtt://mqtt:1883
-      - MQTT_TOPIC=rig/live/data
-      - PORT=8080
-    depends_on:
-      - mqtt
-    restart: unless-stopped
+      - api_server
 
 volumes:
   timescaledb_data:
