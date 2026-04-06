@@ -206,8 +206,15 @@ async def get_history(
 async def get_tags():
     try:
         async with db_pool.acquire() as conn:
-            # Fetch unique tag names from metadata table
-            records = await conn.fetch("SELECT tag_name, description, unit FROM opc_tags ORDER BY tag_name ASC")
+            # ONLY return tags that have actually reported data in the last 24 hours
+            # This ensures the selection modal only shows working/polling tags.
+            records = await conn.fetch("""
+                SELECT DISTINCT ON (m.tag_name) m.tag_name, m.description, m.unit 
+                FROM opc_tags m
+                INNER JOIN tag_data d ON m.tag_name = d.tag_name
+                WHERE d.time > NOW() - INTERVAL '24 hours'
+                ORDER BY m.tag_name ASC
+            """)
         return {"success": True, "data": [dict(r) for r in records]}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -248,11 +255,37 @@ async def update_config(req: ConfigUpdateReq):
 # ------------------------------------------------------------------------------
 # WebSockets
 # ------------------------------------------------------------------------------
+async def send_initial_snapshot(websocket: WebSocket):
+    """Sends the latest value for every tag that has reported within the last hour."""
+    try:
+        async with db_pool.acquire() as conn:
+            records = await conn.fetch("""
+                SELECT DISTINCT ON (tag_name) tag_name, value, time
+                FROM tag_data
+                WHERE time > NOW() - INTERVAL '1 hour'
+                ORDER BY tag_name, time DESC
+            """)
+            
+            if records:
+                snapshot = {r['tag_name']: float(r['value']) for r in records}
+                latest_ts = max(r['time'] for r in records).isoformat()
+                await websocket.send_json({
+                    "data": snapshot,
+                    "timestamp": latest_ts,
+                    "tier": "snapshot"
+                })
+    except Exception as e:
+        print(f"[WS] Error sending snapshot: {e}")
+
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     active_websockets.add(websocket)
     print(f"[WS] Client connected")
+    
+    # 🔥 Immediate boost: send current rig state so UI doesn't start with "---"
+    await send_initial_snapshot(websocket)
+    
     try:
         while True:
             # Keep connection open until client leaves

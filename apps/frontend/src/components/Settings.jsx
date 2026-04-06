@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 /**
- * Settings Component - Transmission Configuration
+ * Settings Component - Transmission Configuration Page
  * Manages WITSML and Modbus dynamic settings.
  */
-const Settings = ({ onClose }) => {
+const Settings = () => {
+    const navigate = useNavigate();
     const [configs, setConfigs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -42,11 +44,15 @@ const Settings = ({ onClose }) => {
     const modbus = configs.find(c => c.service_name === 'modbus') || { is_enabled: false, settings: {} };
 
     return (
-        <div className="content-fade-in">
-            <header className="header">
-                <h2 className="secondary-title">Transmission Control Center</h2>
-                <button className="btn-primary" onClick={onClose}>Back to Dashboard</button>
-            </header>
+        <div className="settings-page">
+            <div className="settings-page-inner content-fade-in">
+                <header className="header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                    <div>
+                        <h2 className="secondary-title" style={{ marginBottom: '4px' }}>⚙️ Transmission Control Center</h2>
+                        <p style={{ fontSize: '0.8rem', color: 'hsl(var(--text-secondary))' }}>Configure WITSML and Modbus gateway services</p>
+                    </div>
+                    <button className="btn-primary" onClick={() => navigate('/')}>← Back to Dashboard</button>
+                </header>
             
             <div className="metrics-layout">
                 {/* WITSML Controller */}
@@ -130,8 +136,11 @@ const Settings = ({ onClose }) => {
                     </div>
                 </div>
             </div>
+            </div>
         </div>
     );
 };
+
+
 
 export default Settings;
