@@ -1,0 +1,33 @@
+# 🐘 IIoT Dashboard Project - .gitignore
+
+# Log files
+*.log
+.docker_up_output.txt
+.mqtt_fail.txt
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+env/
+venv/
+.env
+
+# Javascript / Node
+node_modules/
+dist/
+.next/
+.npm
+.eslintcache
+
+# Docker
+.docker
+
+# OS & Workspace
+.DS_Store
+.vscode/
+.idea/
+.gemini/
+*.tmp
+*.bak
