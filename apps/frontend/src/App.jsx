@@ -57,7 +57,7 @@ function Dashboard() {
       const uniqueTags = [...new Set(activeTags)];
       if (uniqueTags.length === 0) return;
 
-      let url = `http://localhost:3000/api/history?tags=${uniqueTags.join(',')}&limit=5000`;
+      let url = `http://localhost:3000/api/history?tags=${uniqueTags.join(',')}&limit=1000000`;
 
       if (timeMode === 'custom' && customStart && customEnd) {
         url += `&start_time=${new Date(customStart).toISOString()}&end_time=${new Date(customEnd).toISOString()}`;
@@ -157,14 +157,14 @@ function Dashboard() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
           {/* We calculate topPadding based on max axes (3 tags = 3 * 25 + 10) for alignment */}
           <div style={{ flex: 1 }}>
-            <TimeAxis 
-              times={timeLabels} 
-              topPadding={10 + (3 * 25)} 
-              bottomPadding={20} 
+            <TimeAxis
+              times={timeLabels}
+              topPadding={90}
+              bottomPadding={0}
             />
           </div>
-          {/* Spacer to account for the tracking-selection-container at the bottom of tracks (~110px) */}
-          <div style={{ height: '110px' }} />
+          {/* Spacer to account for the tracking-selection-container at the bottom of tracks (~115px) */}
+          <div style={{ height: '115px' }} />
         </div>
       </div>
 
@@ -205,9 +205,9 @@ function Dashboard() {
 
         {/* Single Dual Gauge (Hookload & WOB) */}
         <div style={{ marginBottom: '10px' }}>
-          <LiveGauge 
-            hookload={data['DRI_Weight_WeightOnHook']} 
-            wob={data['DRI_Weight_WeightOnBit']} 
+          <LiveGauge
+            hookload={data['DRI_Weight_WeightOnHook']}
+            wob={data['DRI_Weight_WeightOnBit']}
           />
         </div>
 
@@ -272,7 +272,7 @@ function Dashboard() {
         <div className="modal-overlay" onClick={() => setShowingTimeModal(false)}>
           <div className="modal-content" onClick={e => e.stopPropagation()}>
             <h3 style={{ marginBottom: '1rem' }}>Enter Custom Range</h3>
-            
+
             <div style={{ marginBottom: '15px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div>
                 <label className="metric-label">Start Time</label>
@@ -296,8 +296,8 @@ function Dashboard() {
             </div>
 
             <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
-              <button 
-                className="btn-primary" 
+              <button
+                className="btn-primary"
                 style={{ flex: 1 }}
                 onClick={() => {
                   setTimeMode('custom');
@@ -306,11 +306,11 @@ function Dashboard() {
               >
                 APPLY RANGE
               </button>
-              <button 
-                className="btn-secondary" 
-                style={{ 
-                  flex: 1, 
-                  background: 'rgba(255,255,255,0.05)', 
+              <button
+                className="btn-secondary"
+                style={{
+                  flex: 1,
+                  background: 'rgba(255,255,255,0.05)',
                   border: '1px solid rgba(255,255,255,0.1)',
                   color: '#fff',
                   borderRadius: '10px',

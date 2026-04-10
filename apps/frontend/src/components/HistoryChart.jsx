@@ -20,7 +20,7 @@ const HistoryChart = () => {
         const fetchHistory = async () => {
             try {
                 // Fetch tiered EAV data: ?tags=...&minutes=...
-                const url = `http://localhost:3000/api/history?minutes=${minutes}&tags=${defaultTags.join(',')}&limit=2000`;
+                const url = `http://localhost:3000/api/history?minutes=${minutes}&tags=${defaultTags.join(',')}&limit=500000`;
                 const response = await fetch(url);
                 const json = await response.json();
                 
@@ -68,7 +68,7 @@ const HistoryChart = () => {
             textStyle: { color: '#8b949e', fontSize: 12 },
             top: 10
         },
-        grid: { left: '3%', right: '4%', bottom: '10%', top: '15%', containLabel: true },
+        grid: { left: '40', right: '20', bottom: '60', top: '50', containLabel: false },
         xAxis: {
             type: 'category',
             boundaryGap: false,
@@ -92,9 +92,12 @@ const HistoryChart = () => {
             name: tag,
             type: 'line',
             symbol: 'none',
+            large: true,
+            largeThreshold: 2000,
             smooth: true,
             data: pivoted.map(p => p[tag] || null),
             lineStyle: { width: 3 },
+            boundaryGap: false,
             // Color cycling
             itemStyle: { color: ['#00ff88', '#00a2ff', '#ffaa00', '#ff4d4d'][idx % 4] }
         }))

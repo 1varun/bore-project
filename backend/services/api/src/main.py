@@ -160,7 +160,7 @@ async def health_check():
 
 @app.get("/api/history")
 async def get_history(
-    limit: int = Query(5000), 
+    limit: int = Query(1000000), 
     minutes: int = Query(60), 
     tags: Optional[str] = None,
     start_time: Optional[str] = None,

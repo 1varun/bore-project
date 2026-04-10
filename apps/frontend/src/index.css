@@ -29,7 +29,7 @@ body {
    ============================================================ */
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 80px 1fr 1fr 1fr 280px;
+  grid-template-columns: 80px 1fr 1fr 1fr 280px 280px;
   grid-template-rows: 56px 1fr;
   height: 100vh;
   gap: 1px;
@@ -40,7 +40,7 @@ body {
    2. TOP BAR
    ============================================================ */
 .top-bar {
-  grid-column: 1 / span 5;
+  grid-column: 1 / span 6;
   background: hsl(var(--bg-surface));
   display: flex;
   justify-content: space-between;

@@ -13,7 +13,7 @@ const Maintenance = () => {
 
     useEffect(() => {
         const fetchPowerTrend = async () => {
-            const url = `http://localhost:3000/api/history?tags=${generators.join(',')}&minutes=30&limit=1000`;
+            const url = `http://localhost:3000/api/history?tags=${generators.join(',')}&minutes=30&limit=50000`;
             try {
                 const res = await fetch(url);
                 const json = await res.json();
@@ -50,7 +50,7 @@ const Maintenance = () => {
         backgroundColor: 'transparent',
         tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
         legend: { textStyle: { color: '#999' }, top: 10 },
-        grid: { left: 40, right: 20, top: 50, bottom: 40 },
+        grid: { left: 40, right: 10, top: 40, bottom: 30 },
         xAxis: { type: 'time', splitLine: { show: false }, axisLabel: { color: '#666' } },
         yAxis: { type: 'value', name: 'Power (kW)', splitLine: { lineStyle: { color: 'rgba(255,255,255,0.05)' } }, axisLabel: { color: '#666' } },
         series: series
